@@ -1,0 +1,443 @@
+// Prisma Schema for Sarıyıldız E-Ticaret Platformu (B2C)
+// Şartname Madde 4 gereğince modellenmiştir.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentProvider {
+  IYZICO
+  PAYTR
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+  FREE_SHIPPING
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum StockMovementReason {
+  SALE
+  RETURN
+  MANUAL_ADJUSTMENT
+  CANCELLED_ORDER
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  passwordHash      String?
+  firstName         String
+  lastName          String
+  phone             String?
+  role              Role           @default(CUSTOMER)
+  emailVerified     DateTime?
+  phoneVerified     DateTime?
+  marketingConsent  Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+
+  addresses         Address[]
+  orders            Order[]
+  carts             Cart[]
+  reviews           Review[]
+  wishlists         Wishlist[]
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Address {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String      // Örn: "Evim", "İş Yeri"
+  fullName     String
+  phone        String
+  city         String      // İl
+  district     String      // İlçe
+  neighborhood String?     // Mahalle
+  addressLine  String      // Açık adres
+  postalCode   String?
+  type         AddressType @default(SHIPPING)
+  isDefault    Boolean     @default(false)
+  
+  // Kurumsal fatura bilgileri
+  isCorporate  Boolean     @default(false)
+  companyName  String?
+  taxNumber    String?
+  taxOffice    String?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  image       String?
+  parentId    String?
+  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[]  @relation("CategoryHierarchy")
+  order       Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  products    Product[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  description String         @db.Text
+  brand       String?        @default("Sarıyıldız")
+  categoryId  String
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  status      ProductStatus  @default(ACTIVE)
+  vatRate     Int            @default(20) // KDV oranı: %1, %10, %20
+  isFeatured  Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+
+  variants    ProductVariant[]
+  images      ProductImage[]
+  reviews     Review[]
+  wishlistItems WishlistItem[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+  @@index([isFeatured])
+}
+
+model ProductVariant {
+  id             String         @id @default(cuid())
+  productId      String
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String         @unique
+  barcode        String?
+  name           String?        // Varyant adı (örn. "20cm Şef Bıçağı", "Siyah - 65W")
+  attributes     Json?          // { "renk": "Siyah", "guc": "65W" }
+  price          Int            // Kuruş cinsinden (29990 = 299.90 ₺)
+  compareAtPrice Int?           // İndirim öncesi liste fiyatı (kuruş)
+  stock          Int            @default(0)
+  weight         Int?           // Gram / Desi
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  cartItems      CartItem[]
+  stockMovements StockMovement[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String?    @unique // Misafir kullanıcılar için çerez oturumu
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  items     CartItem[]
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id        String         @id @default(cuid())
+  cartId    String
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int            @default(1)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+  @@index([variantId])
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  orderNumber     String         @unique // Benzersiz okunabilir numara: SY-202610-1001
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestEmail      String?
+  guestPhone      String?
+  guestName       String?
+  status          OrderStatus    @default(PENDING_PAYMENT)
+  
+  // Sipariş anındaki adres anlık görüntüleri (JSON snapshot)
+  shippingAddress Json
+  billingAddress  Json
+
+  // Tutarlar kuruş cinsinden
+  subtotal        Int            // Ara toplam
+  shippingCost    Int            @default(0) // Kargo tutarı
+  discountAmount  Int            @default(0) // Kupon/kampanya indirimi
+  taxAmount       Int            @default(0) // Dahil edilen KDV
+  totalAmount     Int            // Genel toplam
+  
+  couponCode      String?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  items           OrderItem[]
+  payments        Payment[]
+  shipments       Shipment[]
+  returnRequests  ReturnRequest[]
+
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId   String?  // Varyant silinse bile sipariş snapshot'ı korunur
+  productName String   // Snapshot ürün adı
+  variantName String?  // Snapshot varyant adı
+  productSku  String   // Snapshot SKU
+  unitPrice   Int      // Snapshot birim fiyat (kuruş)
+  taxRate     Int      @default(20) // Snapshot KDV oranı
+  quantity    Int      @default(1)
+  totalPrice  Int      // unitPrice * quantity
+  attributes  Json?    // Snapshot özellikler
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  orderId        String
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider       PaymentProvider @default(IYZICO)
+  transactionId  String?         // Sağlayıcı işlem no
+  status         PaymentStatus   @default(PENDING)
+  amount         Int             // Kuruş cinsinden
+  isThreeDSecure Boolean         @default(true)
+  rawResponse    Json?           // Maskelenmiş sağlayıcı yanıtı
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([orderId])
+  @@index([transactionId])
+}
+
+model Shipment {
+  id             String    @id @default(cuid())
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  carrier        String    // Örn: "Yurtiçi Kargo", "Aras Kargo"
+  trackingNumber String?
+  status         String    @default("Hazırlanıyor")
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([orderId])
+}
+
+model Coupon {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  discountType   CouponType @default(PERCENTAGE)
+  value          Int        // Yüzde ise 15 (%15), sabit ise kuruş (5000 = 50 TL)
+  minOrderAmount Int?       // Kuruş cinsinden asgari sepet tutarı
+  maxUsage       Int?       // Toplam kullanım sınırı
+  usageCount     Int        @default(0)
+  perUserLimit   Int        @default(1)
+  startDate      DateTime   @default(now())
+  endDate        DateTime
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([code])
+}
+
+model Review {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating          Int          // 1 - 5
+  title           String?
+  comment         String       @db.Text
+  isVerifiedBuyer Boolean      @default(false)
+  status          ReviewStatus @default(PENDING)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Wishlist {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  items     WishlistItem[]
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+}
+
+model ReturnRequest {
+  id           String       @id @default(cuid())
+  orderId      String
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reason       String       @db.Text
+  status       ReturnStatus @default(PENDING)
+  refundAmount Int?         // Kuruş
+  adminNote    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([orderId])
+}
+
+model StockMovement {
+  id          String              @id @default(cuid())
+  variantId   String
+  variant     ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  change      Int                 // Pozitif (giriş) veya negatif (satış)
+  reason      StockMovementReason
+  referenceId String?             // Sipariş ID vb.
+  createdAt   DateTime            @default(now())
+
+  @@index([variantId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // "UPDATE_PRODUCT", "CHANGE_ORDER_STATUS" vb.
+  entity    String   // "Product", "Order"
+  entityId  String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
