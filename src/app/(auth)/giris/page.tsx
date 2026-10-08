@@ -26,12 +26,16 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-[70vh] max-w-md items-center justify-center px-4 py-12">
       <div className="w-full rounded-3xl border border-slate-800 bg-[#0e1320] p-8 shadow-2xl">
         <div className="text-center">
-          <div className="mx-auto relative h-16 w-16 overflow-hidden rounded-full border border-amber-500/40 bg-black mb-4">
+          <div
+            className="mx-auto relative h-16 w-16 overflow-hidden rounded-full border border-amber-500/40 bg-black mb-4 flex items-center justify-center"
+            style={{ position: "relative" }}
+          >
             <Image
               src="/images/logo.jpg"
               alt="Sarıyıldız Logo"
-              fill
-              className="object-cover"
+              width={64}
+              height={64}
+              className="rounded-full object-cover"
             />
           </div>
           <h1 className="text-2xl font-extrabold text-white">Giriş Yap</h1>

@@ -58,12 +58,16 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         {/* Sol: Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-amber-500/40 bg-black p-0.5 shadow-md transition-transform group-hover:scale-105">
+          <div
+            className="relative h-12 w-12 overflow-hidden rounded-full border border-amber-500/40 bg-black p-0.5 shadow-md transition-transform group-hover:scale-105 flex items-center justify-center"
+            style={{ position: "relative" }}
+          >
             <Image
               src="/images/logo.jpg"
               alt="Sarıyıldız Logo"
-              fill
-              className="object-cover"
+              width={48}
+              height={48}
+              className="rounded-full object-cover"
               priority
             />
           </div>

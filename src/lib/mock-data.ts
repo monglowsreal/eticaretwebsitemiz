@@ -191,7 +191,7 @@ export const PRODUCTS: ProductItem[] = [
     images: [
       {
         id: "img-5",
-        url: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?q=80&w=1000&auto=format&fit=crop",
+        url: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=1000&auto=format&fit=crop",
         altText: "20000 mAh Powerbank",
       },
     ],

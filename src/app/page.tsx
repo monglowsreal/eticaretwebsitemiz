@@ -73,18 +73,23 @@ export default async function HomePage() {
             </div>
 
             {/* Sağ: Marka Banner & Görsel Kompozisyonu */}
-            <div className="relative flex justify-center lg:justify-end">
-              <div className="relative h-80 w-80 sm:h-96 sm:w-96 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-slate-900 to-black p-4 shadow-2xl gold-glow">
-                <div className="relative h-full w-full overflow-hidden rounded-2xl">
-                  <Image
-                    src="/images/logo.jpg"
-                    alt="Sarıyıldız Marka"
-                    fill
-                    className="object-contain p-4"
-                    priority
-                  />
-                </div>
-                <div className="absolute -bottom-4 -left-4 rounded-xl border border-slate-800 bg-slate-900/90 px-4 py-2.5 shadow-xl backdrop-blur">
+            <div className="relative flex justify-center lg:justify-end" style={{ position: "relative" }}>
+              <div
+                className="relative h-72 w-72 sm:h-88 sm:w-88 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-slate-900 via-black to-slate-950 p-6 shadow-2xl gold-glow flex items-center justify-center"
+                style={{ position: "relative" }}
+              >
+                <Image
+                  src="/images/logo.jpg"
+                  alt="Sarıyıldız Marka"
+                  width={300}
+                  height={300}
+                  className="object-contain rounded-2xl max-w-full h-auto drop-shadow-2xl"
+                  priority
+                />
+                <div
+                  className="absolute -bottom-4 -left-4 rounded-xl border border-slate-800 bg-slate-900/95 px-4 py-2.5 shadow-xl backdrop-blur"
+                  style={{ position: "absolute" }}
+                >
                   <div className="flex items-center gap-2">
                     <Flame className="h-5 w-5 text-amber-400" />
                     <div>

@@ -53,12 +53,16 @@ export function Footer() {
           {/* Kolon 1: Marka Tanıtımı */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-amber-500/40 bg-black">
+              <div
+                className="relative h-10 w-10 overflow-hidden rounded-full border border-amber-500/40 bg-black flex items-center justify-center"
+                style={{ position: "relative" }}
+              >
                 <Image
                   src="/images/logo.jpg"
                   alt="Sarıyıldız Logo"
-                  fill
-                  className="object-cover"
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
                 />
               </div>
               <span className="text-xl font-extrabold tracking-wider text-white">
