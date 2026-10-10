@@ -6,6 +6,12 @@ export const Orders: CollectionConfig = {
     useAsTitle: "orderNumber",
     defaultColumns: ["orderNumber", "customerName", "totalAmount", "status", "createdAt"],
   },
+  access: {
+    read: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    create: () => true,
+    update: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    delete: ({ req: { user } }) => Boolean(user && user.role === "admin"),
+  },
   fields: [
     {
       name: "orderNumber",

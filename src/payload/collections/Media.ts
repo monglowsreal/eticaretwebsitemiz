@@ -21,6 +21,12 @@ export const Media: CollectionConfig = {
     adminThumbnail: "thumbnail",
     mimeTypes: ["image/*"],
   },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    update: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    delete: ({ req: { user } }) => Boolean(user && user.role === "admin"),
+  },
   fields: [
     {
       name: "alt",

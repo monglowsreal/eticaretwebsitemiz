@@ -6,6 +6,12 @@ export const Categories: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "slug", "order"],
   },
+  access: {
+    read: () => true,
+    create: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    update: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
+    delete: ({ req: { user } }) => Boolean(user && user.role === "admin"),
+  },
   fields: [
     {
       name: "name",
