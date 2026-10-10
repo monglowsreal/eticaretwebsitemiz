@@ -1,6 +1,7 @@
 import { buildConfig } from "payload";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
+import sharp from "sharp";
 import { Users } from "./src/payload/collections/Users";
 import { Media } from "./src/payload/collections/Media";
 import { Categories } from "./src/payload/collections/Categories";
@@ -8,6 +9,7 @@ import { Products } from "./src/payload/collections/Products";
 import { Orders } from "./src/payload/collections/Orders";
 
 export default buildConfig({
+  sharp,
   admin: {
     user: Users.slug,
     meta: {
