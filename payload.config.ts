@@ -27,8 +27,10 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString:
+        process.env.DIRECT_URL ||
         process.env.DATABASE_URL ||
         "postgresql://postgres:postgres@localhost:5432/sariyildiz_db?schema=public",
     },
+    schemaName: "payload",
   }),
 });
