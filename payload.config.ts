@@ -32,6 +32,12 @@ export default buildConfig({
         process.env.DIRECT_URL ||
         process.env.DATABASE_URL ||
         "postgresql://postgres:postgres@localhost:5432/sariyildiz_db?schema=public",
+      ssl:
+        process.env.NODE_ENV === "production" ||
+        process.env.DIRECT_URL?.includes("supabase") ||
+        process.env.DATABASE_URL?.includes("supabase")
+          ? { rejectUnauthorized: false }
+          : false,
     },
     schemaName: "payload",
   }),
