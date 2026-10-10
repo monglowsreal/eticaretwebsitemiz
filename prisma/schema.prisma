@@ -86,6 +86,7 @@ model User {
   passwordHash      String?
   firstName         String
   lastName          String
+  image             String?
   phone             String?
   role              Role           @default(CUSTOMER)
   emailVerified     DateTime?

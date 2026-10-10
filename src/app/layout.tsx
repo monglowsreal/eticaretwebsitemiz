@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/shop/Header";
 import { Footer } from "@/components/shop/Footer";
 import { CartDrawer } from "@/components/shop/CartDrawer";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Sarıyıldız | Profesyonel Bıçaklar, Outdoor & Teknoloji",
@@ -21,10 +22,12 @@ export default function RootLayout({
   return (
     <html lang="tr" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-[#0b0f17] text-slate-100">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <CartDrawer />
+        <AuthProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <CartDrawer />
+        </AuthProvider>
       </body>
     </html>
   );

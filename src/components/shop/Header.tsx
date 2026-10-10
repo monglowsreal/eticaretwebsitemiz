@@ -3,14 +3,30 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { ShoppingBag, Search, Menu, X, ShieldCheck, Truck, Sparkles, User } from "lucide-react";
+import {
+  ShoppingBag,
+  Search,
+  Menu,
+  X,
+  ShieldCheck,
+  Truck,
+  Sparkles,
+  User,
+  LogOut,
+  ChevronDown,
+  Shield,
+  Package,
+} from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 
 export function Header() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const totalCount = useCartStore((state) => state.getTotalCount());
@@ -36,6 +52,9 @@ export function Header() {
     { name: "Wireless Hoparlör", href: "/kategori/wireless-hoparlor-ve-ses" },
     { name: "Tüm Ürünler", href: "/arama" },
   ];
+
+  const user = session?.user;
+  const isAdmin = (user as unknown as { role?: string })?.role === "ADMIN" || user?.email?.includes("admin");
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-[#0b0f17]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0b0f17]/80">
@@ -103,20 +122,79 @@ export function Header() {
 
         {/* Sağ: İkonlar */}
         <div className="flex items-center gap-3">
-          {/* Giriş Yap / Profil */}
-          <Link
-            href="/giris"
-            className="hidden items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-200 hover:border-slate-700 hover:text-amber-400 sm:flex transition-colors"
-          >
-            <User className="h-4 w-4 text-amber-400" />
-            <span>Hesabım</span>
-          </Link>
+          {/* Giriş Yap veya Kullanıcı Menüsü */}
+          {user ? (
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:border-amber-500 transition-all"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-[10px] font-extrabold text-slate-950 uppercase">
+                  {user.name ? user.name.slice(0, 2) : "SY"}
+                </div>
+                <span className="max-w-[100px] truncate">{user.name?.split(" ")[0] || "Hesabım"}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+              </button>
+
+              {/* Kullanıcı Açılır Menü */}
+              {userDropdownOpen && (
+                <div
+                  onMouseLeave={() => setUserDropdownOpen(false)}
+                  className="absolute right-0 mt-2 w-48 rounded-2xl border border-slate-800 bg-[#0e1320] p-2 shadow-2xl z-50 text-xs space-y-1"
+                >
+                  <div className="px-3 py-2 border-b border-slate-800">
+                    <p className="font-bold text-white truncate">{user.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                  </div>
+
+                  <Link
+                    href="/hesabim"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-300 hover:bg-slate-900 hover:text-amber-400"
+                  >
+                    <Package className="h-4 w-4" />
+                    <span>Siparişlerim & Profil</span>
+                  </Link>
+
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-amber-400 hover:bg-amber-500/10 font-medium"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>Yönetim Paneli</span>
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-slate-400 hover:bg-red-950/30 hover:text-red-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Çıkış Yap</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/giris"
+              className="hidden items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:border-amber-500/50 hover:text-amber-400 sm:flex transition-colors"
+            >
+              <User className="h-4 w-4 text-amber-400" />
+              <span>Giriş Yap</span>
+            </Link>
+          )}
 
           {/* Sepet Butonu */}
           <button
             onClick={openCart}
             aria-label="Sepeti Aç"
-            className="relative flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-amber-400 hover:bg-amber-500/20 transition-colors"
+            className="relative flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-amber-400 hover:bg-amber-500/20 transition-colors"
           >
             <ShoppingBag className="h-5 w-5" />
             <span className="hidden text-xs font-semibold sm:inline">Sepetim</span>
@@ -177,13 +255,47 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
-            <Link
-              href="/giris"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm font-medium text-amber-400 hover:bg-slate-800"
-            >
-              <User className="h-4 w-4" /> Giriş Yap / Kayıt Ol
-            </Link>
+
+            {user ? (
+              <div className="border-t border-slate-800 pt-2 space-y-2">
+                <Link
+                  href="/hesabim"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                  <User className="h-4 w-4 text-amber-400" />
+                  <span>{user.name} (Hesabım)</span>
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-amber-400 hover:bg-slate-800"
+                  >
+                    <Shield className="h-4 w-4" />
+                    <span>Yönetim Paneli</span>
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut({ callbackUrl: "/" });
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-400 hover:bg-slate-800"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Çıkış Yap</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/giris"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm font-medium text-amber-400 hover:bg-slate-800"
+              >
+                <User className="h-4 w-4" /> Giriş Yap / Kayıt Ol
+              </Link>
+            )}
           </div>
         </div>
       )}
