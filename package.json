@@ -17,12 +17,17 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "^3.90.2",
+    "@payloadcms/next": "^3.90.2",
+    "@payloadcms/richtext-lexical": "^3.90.2",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "graphql": "^17.0.2",
     "lucide-react": "^1.53.0",
     "next": "16.4.0",
     "next-auth": "^5.0.0-beta.32",
+    "payload": "^3.90.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "tailwind-merge": "^3.7.0",
