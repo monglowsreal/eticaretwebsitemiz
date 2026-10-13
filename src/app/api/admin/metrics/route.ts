@@ -37,10 +37,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       metrics: {
-        totalRevenueKurus: totalRevenueKurus > 0 ? totalRevenueKurus : 18495000,
-        totalOrdersCount: orders.length > 0 ? orders.length : 24,
-        totalProductsCount: products.length > 0 ? products.length : 9,
-        averageOrderKurus: averageOrderKurus > 0 ? averageOrderKurus : 74500,
+        totalRevenueKurus: totalRevenueKurus,
+        totalOrdersCount: orders.length,
+        totalProductsCount: products.length,
+        averageOrderKurus: averageOrderKurus,
         lowStockItems,
       },
     });
@@ -49,18 +49,11 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       metrics: {
-        totalRevenueKurus: 18495000,
-        totalOrdersCount: 24,
-        totalProductsCount: 9,
-        averageOrderKurus: 74500,
-        lowStockItems: [
-          {
-            id: "var-1",
-            productName: "Sarıyıldız VG-10 Şam Çeliği 67 Katman Şef Bıçağı",
-            sku: "SY-KN-VG10-20",
-            stock: 3,
-          },
-        ],
+        totalRevenueKurus: 0,
+        totalOrdersCount: 0,
+        totalProductsCount: 0,
+        averageOrderKurus: 0,
+        lowStockItems: [],
       },
     });
   }

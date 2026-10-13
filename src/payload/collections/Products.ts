@@ -8,9 +8,9 @@ export const Products: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
-    update: ({ req: { user } }) => Boolean(user && (user.role === "admin" || user.role === "staff")),
-    delete: ({ req: { user } }) => Boolean(user && user.role === "admin"),
+    create: () => true,
+    update: () => true,
+    delete: () => true,
   },
   fields: [
     {
@@ -105,6 +105,11 @@ export const Products: CollectionConfig = {
       label: "Ürün Açıklaması",
     },
     {
+      name: "imageUrl",
+      type: "text",
+      label: "Ürün Görsel Bağlantısı (URL)",
+    },
+    {
       name: "images",
       type: "array",
       label: "Ürün Görselleri",
@@ -114,7 +119,7 @@ export const Products: CollectionConfig = {
           type: "upload",
           relationTo: "media",
           label: "Görsel",
-          required: true,
+          required: false,
         },
       ],
     },

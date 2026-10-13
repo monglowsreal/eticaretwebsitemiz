@@ -124,6 +124,14 @@ export class ProductService {
               });
             }
 
+            if (p.imageUrl) {
+              images.unshift({
+                id: `img-${p.id}`,
+                url: p.imageUrl,
+                altText: p.name,
+              });
+            }
+
             if (images.length === 0) {
               images.push({
                 id: "default-img",
@@ -260,6 +268,14 @@ export class ProductService {
               }
             });
           }
+          if (p.imageUrl) {
+            images.unshift({
+              id: `img-${p.id}`,
+              url: p.imageUrl,
+              altText: p.name,
+            });
+          }
+
           if (images.length === 0) {
             images.push({
               id: "default-img",

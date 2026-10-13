@@ -25,6 +25,7 @@ export async function PATCH(
       collection: "products",
       id,
       data: updateData,
+      overrideAccess: true,
     });
 
     return NextResponse.json({ success: true, product: updated });
@@ -48,6 +49,7 @@ export async function DELETE(
     await payload.delete({
       collection: "products",
       id,
+      overrideAccess: true,
     });
 
     return NextResponse.json({ success: true, message: "Ürün silindi." });

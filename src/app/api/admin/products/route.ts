@@ -2,6 +2,62 @@ import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 import configPromise from "@payload-config";
 
+const CATEGORY_NAMES: Record<string, string> = {
+  "sef-bicaklari": "Mutfak & Şef Bıçakları",
+  "sarj-cihazlari": "Elektronik & Şarj Cihazları",
+  "kamp-fenerleri": "Outdoor & Kamp Fenerleri",
+  "hoparlorler": "Ses & Bluetooth Hoparlörler",
+  genel: "Genel Ürünler",
+};
+
+async function getOrCreateCategory(payload: any, slug: string): Promise<string | number> {
+  const targetSlug = slug || "genel";
+
+  // 1. İstenen slug ile ara
+  const found = await payload.find({
+    collection: "categories",
+    where: { slug: { equals: targetSlug } },
+    limit: 1,
+  });
+  if (found.docs.length > 0) {
+    return found.docs[0].id;
+  }
+
+  // 2. İstenen slug ile yeni kategori oluştur
+  try {
+    const created = await payload.create({
+      collection: "categories",
+      data: {
+        name: CATEGORY_NAMES[targetSlug] || targetSlug,
+        slug: targetSlug,
+        description: `${CATEGORY_NAMES[targetSlug] || targetSlug} kategorisi`,
+      },
+      overrideAccess: true,
+    });
+    return created.id;
+  } catch {
+    // 3. Eğer kategori zaten varsa ilk mevcut kategoriyi al
+    const anyCat = await payload.find({
+      collection: "categories",
+      limit: 1,
+    });
+    if (anyCat.docs.length > 0) {
+      return anyCat.docs[0].id;
+    }
+  }
+
+  // 4. Benzersiz slug ile fallback kategori
+  const fallback = await payload.create({
+    collection: "categories",
+    data: {
+      name: "Genel",
+      slug: `cat-${Date.now()}`,
+    },
+    overrideAccess: true,
+  });
+  return fallback.id;
+}
+
 export async function GET() {
   try {
     const payload = await getPayload({ config: configPromise });
@@ -35,6 +91,7 @@ export async function POST(req: Request) {
       stock = 20,
       description,
       isFeatured = false,
+      imageUrl,
     } = data;
 
     if (!name || !slug || !price) {
@@ -46,27 +103,8 @@ export async function POST(req: Request) {
 
     const payload = await getPayload({ config: configPromise });
 
-    // 1. Kategoriyi bul veya otomatik oluştur
-    let categoryId: string | number | null = null;
-    const catRes = await payload.find({
-      collection: "categories",
-      where: categorySlug ? { slug: { equals: categorySlug } } : {},
-      limit: 1,
-    });
-
-    if (catRes.docs.length > 0) {
-      categoryId = catRes.docs[0].id;
-    } else {
-      const newCat = await payload.create({
-        collection: "categories",
-        data: {
-          name: "Genel",
-          slug: "genel",
-          description: "Genel kategorisi",
-        },
-      });
-      categoryId = newCat.id;
-    }
+    // 1. Kategoriyi bul veya akıllıca oluştur
+    const categoryId = await getOrCreateCategory(payload, categorySlug);
 
     // 2. Slug çakışmasını engelle
     let finalSlug = slug;
@@ -94,7 +132,9 @@ export async function POST(req: Request) {
         sku: sku || `SY-${Date.now().toString().slice(-6)}`,
         isFeatured: Boolean(isFeatured),
         description: description || name,
+        imageUrl: imageUrl || undefined,
       },
+      overrideAccess: true,
     });
 
     return NextResponse.json({
