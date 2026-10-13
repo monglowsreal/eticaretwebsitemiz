@@ -46,7 +46,8 @@ export function Header() {
   };
 
   const navCategories = [
-    { name: "Şef Bıçakları & Mutfak", href: "/kategori/sef-bicaklari" },
+    { name: "Şef Bıçakları", href: "/kategori/sef-bicaklari" },
+    { name: "Satırlar & Kasap", href: "/kategori/satirlar" },
     { name: "Şarj & Güç Çözümleri", href: "/kategori/sarj-cihazlari" },
     { name: "Kamp & Outdoor", href: "/kategori/kamp-fenerleri" },
     { name: "Tüm Ürünler", href: "/arama" },
