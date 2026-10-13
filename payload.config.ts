@@ -15,6 +15,7 @@ export default buildConfig({
     user: Users.slug,
     components: {
       beforeDashboard: ["@/payload/components/BeforeDashboard"],
+      afterNavLinks: ["@/payload/components/GlobalAiAssistant"],
     },
     meta: {
       titleSuffix: " · Sarıyıldız Yönetim",
