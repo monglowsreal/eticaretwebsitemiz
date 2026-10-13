@@ -19,6 +19,10 @@ import {
   Edit,
   ArrowRight,
   Search,
+  Lock,
+  LogOut,
+  ShieldCheck,
+  User,
 } from "lucide-react";
 
 interface Product {
@@ -67,8 +71,17 @@ interface Order {
 }
 
 export default function AdminDashboardPage() {
+  // Giriş / Yetki State'leri
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [adminUser, setAdminUser] = useState<{ email: string; role: string } | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Panel State'leri
   const [activeTab, setActiveTab] = useState<"products" | "orders" | "stock">("products");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -96,7 +109,70 @@ export default function AdminDashboardPage() {
   const [productSearch, setProductSearch] = useState("");
   const [orderFilter, setOrderFilter] = useState("ALL");
 
-  // Verileri Çek
+  // 1. Yetki Durumunu Denetle
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/admin/auth");
+      const data = await res.json();
+      if (data.authenticated && data.user) {
+        setIsAuthenticated(true);
+        setAdminUser(data.user);
+        fetchAllData();
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  // 2. Giriş Yap (Login)
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      setLoginError("Lütfen e-posta ve şifrenizi girin.");
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError(null);
+
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.");
+      }
+
+      setIsAuthenticated(true);
+      setAdminUser(data.user);
+      fetchAllData();
+    } catch (err: any) {
+      setLoginError(err.message || "Giriş yapılamadı.");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // 3. Çıkış Yap (Logout)
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth", { method: "DELETE" });
+    } catch {}
+    setIsAuthenticated(false);
+    setAdminUser(null);
+  };
+
+  // 4. Panel Verilerini Çek
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -120,11 +196,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  // 1. Gemini ile Otomatik Ürün İçeriği Doldur
+  // Gemini ile Otomatik Ürün İçeriği Doldur
   const handleGenerateWithAi = async () => {
     if (!aiPrompt.trim()) {
       setAiErrorMsg("Lütfen ürün fikri veya özelliklerini yazın.");
@@ -171,7 +243,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 2. Ürünü Veritabanına Kaydet & Canlıya Al
+  // Ürünü Veritabanına Kaydet & Canlıya Al
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formPriceTl) {
@@ -210,7 +282,6 @@ export default function AdminDashboardPage() {
       }
 
       alert("🎉 Ürün başarıyla kaydedildi ve mağazada canlıya alındı!");
-      // Formu temizle ve listeyi tazele
       setFormName("");
       setFormSlug("");
       setFormPriceTl("");
@@ -229,7 +300,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 3. Hızlı Stok Değiştir
+  // Hızlı Stok Değiştir
   const handleQuickStock = async (productId: string, currentStock: number, delta: number) => {
     const newStock = Math.max(0, currentStock + delta);
     try {
@@ -248,7 +319,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 4. Ürünü Sil
+  // Ürünü Sil
   const handleDeleteProduct = async (productId: string, name: string) => {
     if (!confirm(`"${name}" ürününü mağazadan silmek istediğinize emin misiniz?`)) return;
     try {
@@ -264,7 +335,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 5. Sipariş Durumu Güncelle
+  // Sipariş Durumu Güncelle
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
@@ -283,7 +354,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 6. Kargo Bilgisi Güncelle
+  // Kargo Bilgisi Güncelle
   const handleUpdateShipping = async (orderId: string, carrier: string, trackingNumber: string) => {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
@@ -323,6 +394,108 @@ export default function AdminDashboardPage() {
     return o.status === orderFilter;
   });
 
+  // ==========================================
+  // DURUM 1: YÜKLENİYOR
+  // ==========================================
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-slate-100 font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 text-amber-400 animate-spin" />
+          <p className="text-sm font-semibold text-slate-400">Yönetici yetkisi denetleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // DURUM 2: GİRİŞ YAPILMAMIŞ - GİRİŞ EKRANI
+  // ==========================================
+  if (isAuthenticated === false) {
+    return (
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-slate-100 font-sans px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Logo & Marka Başlığı */}
+          <div className="text-center mb-8">
+            <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 items-center justify-center font-bold text-slate-950 text-2xl shadow-xl shadow-amber-500/20 mb-3">
+              ★
+            </div>
+            <h1 className="text-2xl font-black tracking-wider text-white">SARIYILDIZ</h1>
+            <p className="text-xs text-amber-400/90 font-bold uppercase tracking-widest mt-1">
+              Yönetim Kokpiti Girişi
+            </p>
+            <p className="text-xs text-slate-400 mt-2">
+              Bu alana yalnızca yetkili mağaza yöneticileri giriş yapabilir.
+            </p>
+          </div>
+
+          {/* Giriş Kartı */}
+          <div className="bg-[#0c1324] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Yönetici E-Posta Adresi
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="admin@sariyildiz.com veya kendi e-postanız"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Yönetici Şifresi
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+                />
+              </div>
+
+              {loginError && (
+                <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full mt-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm py-3 rounded-xl transition shadow-lg shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Lock className={`w-4 h-4 ${loginLoading ? "animate-spin" : ""}`} />
+                <span>{loginLoading ? "Giriş Yapılıyor..." : "Yönetici Girişi Yap"}</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="text-center mt-6">
+            <Link
+              href="/"
+              className="text-xs text-slate-500 hover:text-amber-400 transition flex items-center justify-center gap-1.5"
+            >
+              <span>← Mağaza Vitrinine Dön</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // DURUM 3: GİRİŞ YAPILMIŞ - YÖNETİM KOKPİTİ
+  // ==========================================
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans pb-24">
       {/* ÜST BAŞLIK & MARKA ÇUBUĞU */}
@@ -343,7 +516,13 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Yönetici Rozeti */}
+            <div className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1 rounded-lg text-xs text-slate-300">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-medium text-slate-300">{adminUser?.email}</span>
+            </div>
+
             <button
               onClick={fetchAllData}
               disabled={loading}
@@ -353,14 +532,24 @@ export default function AdminDashboardPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-amber-400" : ""}`} />
               <span className="hidden sm:inline">Yenile</span>
             </button>
+
             <Link
               href="/"
               target="_blank"
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-md shadow-amber-500/20"
             >
-              <span>Mağazayı Gör</span>
+              <span>Mağaza</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 text-xs font-semibold transition"
+              title="Güvenli Çıkış"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Çıkış</span>
+            </button>
           </div>
         </div>
       </header>
@@ -374,7 +563,7 @@ export default function AdminDashboardPage() {
               <TrendingUp className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-xl font-bold text-emerald-400">
-              {metrics ? (metrics.totalRevenueKurus / 100).toLocaleString("tr-TR") : "..."} ₺
+              {metrics ? (metrics.totalRevenueKurus / 100).toLocaleString("tr-TR") : "0"} ₺
             </div>
             <div className="text-[11px] text-slate-500 mt-1">Ödenen siparişler toplamı</div>
           </div>
