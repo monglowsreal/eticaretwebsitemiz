@@ -46,10 +46,9 @@ export function Header() {
   };
 
   const navCategories = [
-    { name: "Şef Bıçakları & Satırlar", href: "/kategori/sef-bicaklari-ve-satirlar" },
-    { name: "Şarj & Güç Çözümleri", href: "/kategori/sarj-ve-guc-cozumleri" },
-    { name: "Kamp & Outdoor", href: "/kategori/kamp-ve-outdoor-aydinlatma" },
-    { name: "Wireless Hoparlör", href: "/kategori/wireless-hoparlor-ve-ses" },
+    { name: "Şef Bıçakları & Mutfak", href: "/kategori/sef-bicaklari" },
+    { name: "Şarj & Güç Çözümleri", href: "/kategori/sarj-cihazlari" },
+    { name: "Kamp & Outdoor", href: "/kategori/kamp-fenerleri" },
     { name: "Tüm Ürünler", href: "/arama" },
   ];
 

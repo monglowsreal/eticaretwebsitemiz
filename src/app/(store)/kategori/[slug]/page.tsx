@@ -91,8 +91,17 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
       {/* Ürün Izgarası */}
       {products.length === 0 ? (
-        <div className="py-16 text-center text-slate-400">
-          <p>Bu kategoride henüz ürün bulunmamaktadır.</p>
+        <div className="rounded-2xl border border-slate-800 bg-[#0e1320] py-16 text-center">
+          <p className="text-base font-semibold text-white">Bu kategoride henüz ürün bulunmamaktadır.</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Yakında yeni ürünlerimiz bu kategoride yer alacaktır.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-xl border border-slate-700 bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:border-amber-500/50 hover:text-amber-400 transition-colors"
+          >
+            Ana Sayfaya Dön
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

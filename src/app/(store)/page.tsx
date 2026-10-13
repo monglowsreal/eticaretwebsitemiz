@@ -41,7 +41,7 @@ export default async function HomePage() {
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link
-                  href="/kategori/sef-bicaklari-ve-satirlar"
+                  href="/kategori/sef-bicaklari"
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:from-amber-400 hover:to-yellow-400 transition-all gold-glow"
                 >
                   <span>Şef Bıçaklarını Keşfet</span>
@@ -170,21 +170,42 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {featuredProducts.length === 0 ? (
+          <div className="rounded-2xl border border-slate-800 bg-[#0e1320] p-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <h3 className="text-lg font-bold text-white">Henüz Ürün Eklenmedi</h3>
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-slate-400">
+              Mağazanızı doldurmak için yönetim panelinden yapay zeka destekli veya manuel olarak yeni ürünler ekleyebilirsiniz.
+            </p>
+            <Link
+              href="/yonetim"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg hover:from-amber-400 hover:to-yellow-400 transition-all"
+            >
+              <span>Yönetim Paneline Git</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
 
-        <div className="mt-8 text-center sm:hidden">
-          <Link
-            href="/arama"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white"
-          >
-            <span>Tüm Ürünleri Gör</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+            <div className="mt-8 text-center sm:hidden">
+              <Link
+                href="/arama"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white"
+              >
+                <span>Tüm Ürünleri Gör</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </>
+        )}
       </section>
 
       {/* 4. MARKA VURGUSU & KAMPANYA BANNERI */}
