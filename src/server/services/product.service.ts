@@ -1,6 +1,16 @@
-import { db } from "@/lib/db";
+import { getPayload } from "payload";
+import configPromise from "@payload-config";
 import { PRODUCTS, CATEGORIES } from "@/lib/mock-data";
 import { ProductItem, CategoryItem } from "@/types";
+
+async function getPayloadClient() {
+  try {
+    return await getPayload({ config: configPromise });
+  } catch (err) {
+    console.warn("Payload getPayload error:", err);
+    return null;
+  }
+}
 
 export class ProductService {
   /**
@@ -8,15 +18,26 @@ export class ProductService {
    */
   static async getCategories(): Promise<CategoryItem[]> {
     try {
-      const dbCategories = await db.category.findMany({
-        where: { isActive: true },
-        orderBy: { order: "asc" },
-      });
-      if (dbCategories.length > 0) {
-        return dbCategories;
+      const payload = await getPayloadClient();
+      if (payload) {
+        const res = await payload.find({
+          collection: "categories",
+          limit: 100,
+        });
+        if (res.docs.length > 0) {
+          return res.docs.map((c: any, index: number) => ({
+            id: String(c.id),
+            name: c.name,
+            slug: c.slug,
+            description: c.description || null,
+            image: c.image ? (typeof c.image === "object" ? c.image.url : null) : null,
+            parentId: null,
+            order: index,
+          }));
+        }
       }
     } catch {
-      // DB hazır değilse mock veriye düşer
+      // Payload hazır değilse mock veriye düşer
     }
     return CATEGORIES;
   }
@@ -26,10 +47,26 @@ export class ProductService {
    */
   static async getCategoryBySlug(slug: string): Promise<CategoryItem | null> {
     try {
-      const cat = await db.category.findUnique({
-        where: { slug },
-      });
-      if (cat) return cat;
+      const payload = await getPayloadClient();
+      if (payload) {
+        const res = await payload.find({
+          collection: "categories",
+          where: { slug: { equals: slug } },
+          limit: 1,
+        });
+        if (res.docs.length > 0) {
+          const c: any = res.docs[0];
+          return {
+            id: String(c.id),
+            name: c.name,
+            slug: c.slug,
+            description: c.description || null,
+            image: c.image ? (typeof c.image === "object" ? c.image.url : null) : null,
+            parentId: null,
+            order: 0,
+          };
+        }
+      }
     } catch {}
 
     return CATEGORIES.find((c) => c.slug === slug) || null;
@@ -37,7 +74,7 @@ export class ProductService {
 
   /**
    * Filtrelenebilir ürün listesi (kategori, arama, sıralama)
-   * Veritabanından gerçek ürünleri çeker, bağlantı yoksa mock veriye düşer.
+   * Payload CMS'ten gerçek ürünleri çeker, kayıt yoksa mock veriye düşer.
    */
   static async getProducts(params?: {
     categorySlug?: string;
@@ -47,74 +84,107 @@ export class ProductService {
     maxPrice?: number;
   }): Promise<ProductItem[]> {
     try {
-      const dbProducts = await db.product.findMany({
-        where: {
-          status: "ACTIVE",
-          ...(params?.categorySlug ? { category: { slug: params.categorySlug } } : {}),
-        },
-        include: {
-          category: true,
-          images: { orderBy: { order: "asc" } },
-          variants: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (dbProducts.length > 0) {
-        let items: ProductItem[] = dbProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          description: p.description,
-          brand: p.brand,
-          category: p.category,
-          variants: p.variants.map((v) => ({
-            id: v.id,
-            sku: v.sku,
-            name: v.name,
-            attributes: (v.attributes as Record<string, string>) || null,
-            price: v.price,
-            compareAtPrice: v.compareAtPrice,
-            stock: v.stock,
-          })),
-          images: p.images.map((img) => ({
-            id: img.id,
-            url: img.url,
-            altText: img.altText,
-          })),
-          isFeatured: p.isFeatured,
-        }));
-
-        if (params?.search) {
-          const q = params.search.toLowerCase().trim();
-          items = items.filter(
-            (p) =>
-              p.name.toLowerCase().includes(q) ||
-              p.description.toLowerCase().includes(q) ||
-              p.category.name.toLowerCase().includes(q)
-          );
+      const payload = await getPayloadClient();
+      if (payload) {
+        const where: any = {
+          status: { equals: "active" },
+        };
+        if (params?.categorySlug) {
+          where["category.slug"] = { equals: params.categorySlug };
         }
 
-        if (params?.minPrice !== undefined) {
-          items = items.filter((p) => (p.variants[0]?.price ?? 0) >= (params.minPrice ?? 0));
-        }
+        const res = await payload.find({
+          collection: "products",
+          where,
+          limit: 100,
+          depth: 2,
+        });
 
-        if (params?.maxPrice !== undefined) {
-          items = items.filter((p) => (p.variants[0]?.price ?? 0) <= (params.maxPrice ?? 0));
-        }
+        if (res.docs.length > 0) {
+          let items: ProductItem[] = res.docs.map((p: any) => {
+            const cat = typeof p.category === "object" && p.category !== null ? p.category : null;
+            const categoryItem: CategoryItem = {
+              id: cat?.id ? String(cat.id) : "cat-default",
+              name: cat?.name || "Genel",
+              slug: cat?.slug || "genel",
+              order: 0,
+            };
 
-        if (params?.sort === "price-asc") {
-          items.sort((a, b) => (a.variants[0]?.price ?? 0) - (b.variants[0]?.price ?? 0));
-        } else if (params?.sort === "price-desc") {
-          items.sort((a, b) => (b.variants[0]?.price ?? 0) - (a.variants[0]?.price ?? 0));
-        } else if (params?.sort === "featured") {
-          items.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-        }
+            const images: { id: string; url: string; altText?: string | null }[] = [];
+            if (Array.isArray(p.images)) {
+              p.images.forEach((imgObj: any, idx: number) => {
+                const img = imgObj.image;
+                if (img && typeof img === "object" && img.url) {
+                  images.push({
+                    id: String(img.id || idx),
+                    url: img.url,
+                    altText: img.alt || p.name,
+                  });
+                }
+              });
+            }
 
-        return items;
+            if (images.length === 0) {
+              images.push({
+                id: "default-img",
+                url: "/images/products/santoku-knife.png",
+                altText: p.name,
+              });
+            }
+
+            return {
+              id: String(p.id),
+              name: p.name,
+              slug: p.slug,
+              description: p.description || "",
+              brand: p.brand || "Sarıyıldız",
+              category: categoryItem,
+              variants: [
+                {
+                  id: `var-${p.id}`,
+                  sku: p.sku || `SY-${p.id}`,
+                  name: `${p.name} Standart`,
+                  price: p.price,
+                  compareAtPrice: p.compareAtPrice || null,
+                  stock: p.stock ?? 0,
+                },
+              ],
+              images,
+              isFeatured: Boolean(p.isFeatured),
+            };
+          });
+
+          if (params?.search) {
+            const q = params.search.toLowerCase().trim();
+            items = items.filter(
+              (p) =>
+                p.name.toLowerCase().includes(q) ||
+                p.description.toLowerCase().includes(q) ||
+                p.category.name.toLowerCase().includes(q)
+            );
+          }
+
+          if (params?.minPrice !== undefined) {
+            items = items.filter((p) => (p.variants[0]?.price ?? 0) >= (params.minPrice ?? 0));
+          }
+
+          if (params?.maxPrice !== undefined) {
+            items = items.filter((p) => (p.variants[0]?.price ?? 0) <= (params.maxPrice ?? 0));
+          }
+
+          if (params?.sort === "price-asc") {
+            items.sort((a, b) => (a.variants[0]?.price ?? 0) - (b.variants[0]?.price ?? 0));
+          } else if (params?.sort === "price-desc") {
+            items.sort((a, b) => (b.variants[0]?.price ?? 0) - (a.variants[0]?.price ?? 0));
+          } else if (params?.sort === "featured") {
+            items.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+          }
+
+          return items;
+        }
       }
     } catch (err) {
-      console.warn("DB getProducts hatası, mock verilere başvuruluyor:", err);
+      console.warn("Payload getProducts error, falling back to mock:", err);
     }
 
     // Mock veri yedeği
@@ -154,45 +224,75 @@ export class ProductService {
   }
 
   /**
-   * Slug ile tek ürün detayı getirir (DB öncelikli)
+   * Slug ile tek ürün detayı getirir (Payload CMS öncelikli)
    */
   static async getProductBySlug(slug: string): Promise<ProductItem | null> {
     try {
-      const p = await db.product.findUnique({
-        where: { slug },
-        include: {
-          category: true,
-          images: { orderBy: { order: "asc" } },
-          variants: true,
-        },
-      });
+      const payload = await getPayloadClient();
+      if (payload) {
+        const res = await payload.find({
+          collection: "products",
+          where: { slug: { equals: slug } },
+          limit: 1,
+          depth: 2,
+        });
 
-      if (p) {
-        return {
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          description: p.description,
-          brand: p.brand,
-          category: p.category,
-          variants: p.variants.map((v) => ({
-            id: v.id,
-            sku: v.sku,
-            name: v.name,
-            attributes: (v.attributes as Record<string, string>) || null,
-            price: v.price,
-            compareAtPrice: v.compareAtPrice,
-            stock: v.stock,
-          })),
-          images: p.images.map((img) => ({
-            id: img.id,
-            url: img.url,
-            altText: img.altText,
-          })),
-          isFeatured: p.isFeatured,
-        };
+        if (res.docs.length > 0) {
+          const p: any = res.docs[0];
+          const cat = typeof p.category === "object" && p.category !== null ? p.category : null;
+          const categoryItem: CategoryItem = {
+            id: cat?.id ? String(cat.id) : "cat-default",
+            name: cat?.name || "Genel",
+            slug: cat?.slug || "genel",
+            order: 0,
+          };
+
+          const images: { id: string; url: string; altText?: string | null }[] = [];
+          if (Array.isArray(p.images)) {
+            p.images.forEach((imgObj: any, idx: number) => {
+              const img = imgObj.image;
+              if (img && typeof img === "object" && img.url) {
+                images.push({
+                  id: String(img.id || idx),
+                  url: img.url,
+                  altText: img.alt || p.name,
+                });
+              }
+            });
+          }
+          if (images.length === 0) {
+            images.push({
+              id: "default-img",
+              url: "/images/products/santoku-knife.png",
+              altText: p.name,
+            });
+          }
+
+          return {
+            id: String(p.id),
+            name: p.name,
+            slug: p.slug,
+            description: p.description || "",
+            brand: p.brand || "Sarıyıldız",
+            category: categoryItem,
+            variants: [
+              {
+                id: `var-${p.id}`,
+                sku: p.sku || `SY-${p.id}`,
+                name: `${p.name} Standart`,
+                price: p.price,
+                compareAtPrice: p.compareAtPrice || null,
+                stock: p.stock ?? 0,
+              },
+            ],
+            images,
+            isFeatured: Boolean(p.isFeatured),
+          };
+        }
       }
-    } catch {}
+    } catch (err) {
+      console.warn("Payload getProductBySlug error:", err);
+    }
 
     const item = PRODUCTS.find((p) => p.slug === slug);
     return item || null;

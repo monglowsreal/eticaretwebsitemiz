@@ -3,6 +3,10 @@
 > Bu doküman, Antigravity agent'ının projeyi baştan sona geliştirirken referans alacağı ana kaynaktır.
 > Her görev öncesinde bu dosyayı oku. Belirsiz bir durumda varsayım yapmadan önce ilgili bölümü kontrol et;
 > bölümde cevap yoksa, en basit ve geri alınabilir seçeneği uygula ve `docs/DECISIONS.md` dosyasına not düş.
+>
+> ⚠️ **MİMARİ GÜNCELLEME (PAYLOAD CMS 3.0)**:
+> Veri katmanı ve yönetim paneli doğrudan **Payload CMS 3.0** (`@payloadcms/next`, `@payloadcms/db-postgres`) üzerine kuruludur.
+> Ayrı Prisma tabloları veya Prisma migration'ları yerine Payload Collection'ları (`src/payload/collections/*`) ve Payload Local API (`getPayload`) tek gerçek veri kaynağıdır (single source of truth). Prisma kullanılmamalıdır.
 
 ---
 
@@ -41,8 +45,8 @@ Aksi belirtilmedikçe aşağıdaki yığını kullan. Farklı bir kütüphane ek
 | Framework | Next.js (App Router) + TypeScript (strict mode) |
 | Stil | Tailwind CSS + shadcn/ui |
 | Durum yönetimi | Sunucu durumu: TanStack Query · İstemci durumu: Zustand (sepet vb.) |
-| Veritabanı | PostgreSQL |
-| ORM | Prisma |
+| Veritabanı | PostgreSQL (Supabase / Neon) |
+| Veri Katmanı / CMS | Payload CMS 3.0 (Drizzle tabanlı `@payloadcms/db-postgres` + Payload Local API) — Prisma yerine |
 | Kimlik doğrulama | Auth.js (NextAuth) — e-posta/şifre + Google girişi |
 | Ödeme | iyzico (birincil), PayTR (alternatif) — soyut `PaymentProvider` arayüzü arkasında |
 | Dosya/Görsel | Cloudinary veya S3 uyumlu depolama + `next/image` |

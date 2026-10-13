@@ -14,6 +14,15 @@ export const Products: CollectionConfig = {
   },
   fields: [
     {
+      name: "aiAssistant",
+      type: "ui",
+      admin: {
+        components: {
+          Field: "@/payload/components/AiProductGenerator",
+        },
+      },
+    },
+    {
       name: "name",
       type: "text",
       label: "Ürün Adı",

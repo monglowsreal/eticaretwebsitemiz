@@ -183,13 +183,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/admin-paneli" className="text-amber-500/80 hover:text-amber-400 font-semibold transition-colors flex items-center gap-1">
-                  <span>✨ AI Ürün & Sipariş Merkezi</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="text-slate-600 hover:text-amber-500 transition-colors">
-                  Yönetim Paneli (Payload CMS)
+                <Link href="/admin" className="text-slate-500 hover:text-amber-400 transition-colors flex items-center gap-1">
+                  <span>Yönetim Paneli Girişi</span>
                 </Link>
               </li>
             </ul>

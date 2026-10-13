@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { ProductStatus } from "@prisma/client";
+import { getPayload } from "payload";
+import configPromise from "@payload-config";
 
 export async function GET() {
   try {
-    const products = await db.product.findMany({
-      include: {
-        category: true,
-        variants: true,
-        images: true,
-      },
-      orderBy: { createdAt: "desc" },
+    const payload = await getPayload({ config: configPromise });
+    const products = await payload.find({
+      collection: "products",
+      limit: 100,
+      depth: 2,
     });
 
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ success: true, products: products.docs });
   } catch (error: any) {
     console.error("Ürün listeleme hatası:", error);
     return NextResponse.json(
@@ -37,7 +35,6 @@ export async function POST(req: Request) {
       stock = 20,
       description,
       isFeatured = false,
-      imageUrl,
     } = data;
 
     if (!name || !slug || !price) {
@@ -47,65 +44,56 @@ export async function POST(req: Request) {
       );
     }
 
-    // Kategoriyi bul veya varsayılan kategoriye bağla
-    let category = await db.category.findUnique({
-      where: { slug: categorySlug || "sef-bicaklari" },
+    const payload = await getPayload({ config: configPromise });
+
+    // 1. Kategoriyi bul veya otomatik oluştur
+    let categoryId: string | number | null = null;
+    const catRes = await payload.find({
+      collection: "categories",
+      where: categorySlug ? { slug: { equals: categorySlug } } : {},
+      limit: 1,
     });
 
-    if (!category) {
-      // Kategori bulunamazsa ilk kategoriyi al
-      const firstCat = await db.category.findFirst();
-      if (!firstCat) {
-        return NextResponse.json(
-          { error: "Veritabanında kayıtlı kategori bulunamadı." },
-          { status: 400 }
-        );
-      }
-      category = firstCat;
+    if (catRes.docs.length > 0) {
+      categoryId = catRes.docs[0].id;
+    } else {
+      const newCat = await payload.create({
+        collection: "categories",
+        data: {
+          name: "Genel",
+          slug: "genel",
+          description: "Genel kategorisi",
+        },
+      });
+      categoryId = newCat.id;
     }
 
-    // Slug çakışmasını önle
+    // 2. Slug çakışmasını engelle
     let finalSlug = slug;
-    const existing = await db.product.findUnique({ where: { slug } });
-    if (existing) {
+    const existing = await payload.find({
+      collection: "products",
+      where: { slug: { equals: slug } },
+      limit: 1,
+    });
+    if (existing.docs.length > 0) {
       finalSlug = `${slug}-${Math.floor(100 + Math.random() * 900)}`;
     }
 
-    // Ürün, Varyant ve Görseli tek transaction ile oluştur
-    const newProduct = await db.product.create({
+    // 3. Payload CMS Products koleksiyonuna kaydet
+    const newProduct = await payload.create({
+      collection: "products",
       data: {
         name,
         slug: finalSlug,
-        description: description || name,
         brand,
-        categoryId: category.id,
-        status: ProductStatus.ACTIVE,
+        category: categoryId,
+        status: "active",
+        price: Number(price),
+        compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
+        stock: Number(stock) || 0,
+        sku: sku || `SY-${Date.now().toString().slice(-6)}`,
         isFeatured: Boolean(isFeatured),
-        variants: {
-          create: {
-            sku: sku || `SY-${Date.now().toString().slice(-6)}`,
-            name: `${name} Standart`,
-            price: Number(price),
-            compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
-            stock: Number(stock) || 0,
-          },
-        },
-        images: {
-          create: [
-            {
-              url:
-                imageUrl ||
-                "https://images.unsplash.com/photo-1593618998160-e34014e67546?q=80&w=1000&auto=format&fit=crop",
-              altText: name,
-              order: 0,
-            },
-          ],
-        },
-      },
-      include: {
-        category: true,
-        variants: true,
-        images: true,
+        description: description || name,
       },
     });
 
@@ -114,7 +102,7 @@ export async function POST(req: Request) {
       product: newProduct,
     });
   } catch (error: any) {
-    console.error("Ürün kaydetme hatası:", error);
+    console.error("Payload ürün oluşturma hatası:", error);
     return NextResponse.json(
       { error: error?.message || "Ürün kaydedilirken bir hata oluştu." },
       { status: 500 }

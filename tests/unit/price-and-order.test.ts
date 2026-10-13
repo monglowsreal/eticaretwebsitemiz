@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { OrderService } from "../../src/server/services/order.service";
+import { OrderService, OrderStatus } from "../../src/server/services/order.service";
 import { CouponService } from "../../src/server/services/coupon.service";
 import { formatPrice, slugify } from "../../src/lib/utils";
-import { OrderStatus } from "@prisma/client";
 
 describe("Fiyat ve Sipariş Hesaplama Testleri (OrderService)", () => {
   it("500 TL altındaki sepetlerde 49,90 TL kargo ücreti eklemelidir", () => {
@@ -58,21 +57,21 @@ describe("Fiyat ve Sipariş Hesaplama Testleri (OrderService)", () => {
 });
 
 describe("Sipariş Durumu Geçiş Matrisi Testleri", () => {
-  it("PENDING_PAYMENT durumundan PAID durumuna geçiş geçerli olmalıdır", () => {
+  it("pending_payment durumundan paid durumuna geçiş geçerli olmalıdır", () => {
     expect(
-      OrderService.canTransition(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID)
+      OrderService.canTransition("pending_payment", "paid")
     ).toBe(true);
   });
 
-  it("PAID durumundan DELIVERED durumuna doğrudan geçilememelidir (önce kargolanmalı)", () => {
+  it("paid durumundan delivered durumuna doğrudan geçilememelidir (önce kargolanmalı)", () => {
     expect(
-      OrderService.canTransition(OrderStatus.PAID, OrderStatus.DELIVERED)
+      OrderService.canTransition("paid", "delivered")
     ).toBe(false);
   });
 
-  it("SHIPPED durumundan DELIVERED durumuna geçiş geçerli olmalıdır", () => {
+  it("shipped durumundan delivered durumuna geçiş geçerli olmalıdır", () => {
     expect(
-      OrderService.canTransition(OrderStatus.SHIPPED, OrderStatus.DELIVERED)
+      OrderService.canTransition("shipped", "delivered")
     ).toBe(true);
   });
 });

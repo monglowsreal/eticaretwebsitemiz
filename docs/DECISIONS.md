@@ -31,3 +31,27 @@ Bu doküman, projede alınan temel mimari, teknoloji ve iş kuralı kararların�
 - **Karar:**
   - Şartname Madde 3 gereğince iş mantığı `src/server/services` altında toplanacaktır.
   - Route handler'lar (`src/app/api`) ve Server Action'lar (`src/server/actions`) yalnızca girdi doğrulama (Zod) ve yetki kontrolü yapıp servisleri çağıran ince katmanlar olarak kalacaktır.
+
+---
+
+## ADR 004: Payload CMS 3.0 — Tek Gerçek Veri Kaynağı & Native Admin Paneli
+- **Tarih:** 2026-10-13
+- **Durum:** Kabul edildi
+- **Karar:**
+  - Prisma çift veritabanı/çift model karmaşası kaldırıldı. Veri katmanı ve yönetim ekranı tamamen **Payload CMS 3.0** (`@payloadcms/next` + `@payloadcms/db-postgres`) üzerine kuruldu.
+  - Tüm server-side veri okuma ve yazma işlemleri Payload Local API (`getPayload({ config: configPromise })`) ile yürütülür.
+  - Ayrı bir `/admin-paneli` rotası yerine native Payload Admin (`/admin`) kullanıldı.
+  - Google Gemini 2.5 Flash asistanı doğrudan Payload ürün formuna (`AiProductGenerator`) ve ana gösterge paneline (`BeforeDashboard`) entegre edildi.
+
+---
+
+## ADR 005: Profesyonel Sipariş Yönetimi (OMS), Stok Rezervasyonu ve Webhook Akışı
+- **Tarih:** 2026-10-13
+- **Durum:** Kabul edildi
+- **Karar:**
+  - Sipariş durumları (`pending_payment`, `paid`, `processing`, `shipped`, `delivered`, `cancelled`, `refunded`) olarak standartlaştırıldı.
+  - `Orders` collection'ına `afterChange` hook'u eklenerek:
+    - Durum `paid` olduğunda ilgili ürünlerin stokları otomatik olarak düşürülür.
+    - Durum `cancelled` veya `refunded` olduğunda stoklar otomatik olarak iade edilir.
+  - Türkiye kargo entegrasyonları (Yurtiçi, Aras, MNG, Sürat, PTT, Kolay Gelsin, HepsiJet) ve takip kodları doğrudan Payload Admin'den yönetilir.
+  - iyzico veya harici ödeme webhook'ları `/api/checkout/webhook` üzerinden sipariş durumunu `paid` yaparak bu döngüyü otomatik tetikler.

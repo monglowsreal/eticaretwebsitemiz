@@ -1,4 +1,11 @@
-import { OrderStatus } from "@prisma/client";
+export type OrderStatus =
+  | "pending_payment"
+  | "paid"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
 
 export interface OrderCalculationInput {
   items: {
@@ -70,18 +77,16 @@ export class OrderService {
 
   /**
    * Geçerli sipariş durumu geçiş matrisi (Şartname Madde 4)
+   * Payload CMS durumları ile tam uyumlu
    */
   private static validTransitions: Record<OrderStatus, OrderStatus[]> = {
-    PENDING_PAYMENT: [OrderStatus.PAID, OrderStatus.CANCELLED, OrderStatus.EXPIRED],
-    PAID: [OrderStatus.PROCESSING, OrderStatus.CANCELLED, OrderStatus.REFUNDED],
-    PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-    SHIPPED: [OrderStatus.DELIVERED, OrderStatus.RETURN_REQUESTED],
-    DELIVERED: [OrderStatus.RETURN_REQUESTED],
-    CANCELLED: [],
-    RETURN_REQUESTED: [OrderStatus.RETURNED, OrderStatus.REFUNDED],
-    RETURNED: [OrderStatus.REFUNDED],
-    REFUNDED: [],
-    EXPIRED: [],
+    pending_payment: ["paid", "cancelled"],
+    paid: ["processing", "cancelled", "refunded"],
+    processing: ["shipped", "cancelled"],
+    shipped: ["delivered", "refunded"],
+    delivered: ["refunded"],
+    cancelled: [],
+    refunded: [],
   };
 
   /**

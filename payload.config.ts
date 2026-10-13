@@ -12,6 +12,9 @@ export default buildConfig({
   sharp,
   admin: {
     user: Users.slug,
+    components: {
+      beforeDashboard: ["@/payload/components/BeforeDashboard"],
+    },
     meta: {
       titleSuffix: " · Sarıyıldız Yönetim",
       icons: [{ rel: "icon", url: "/images/logo.jpg" }],

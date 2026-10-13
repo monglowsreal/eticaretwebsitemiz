@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { OrderStatus } from "@prisma/client";
+import { getPayload } from "payload";
+import configPromise from "@payload-config";
 
 export async function PATCH(
   req: Request,
@@ -9,45 +9,29 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { status, carrier, trackingNumber, notes } = body;
+    const { status, carrier, trackingNumber, trackingUrl, notes } = body;
 
-    // Eğer demo ID ise başarı döndür
-    if (id.startsWith("order-demo-")) {
-      return NextResponse.json({
-        success: true,
-        message: "Demo sipariş durumu güncellendi.",
-        order: { id, status, carrier, trackingNumber, notes },
-      });
-    }
+    const payload = await getPayload({ config: configPromise });
 
     const updateData: any = {};
-    if (status) updateData.status = status as OrderStatus;
+    if (status) updateData.status = status;
+    if (carrier) updateData.carrier = carrier;
+    if (trackingNumber) updateData.trackingNumber = trackingNumber;
+    if (trackingUrl) updateData.trackingUrl = trackingUrl;
     if (notes !== undefined) updateData.notes = notes;
 
-    const updatedOrder = await db.order.update({
-      where: { id },
+    const updatedOrder = await payload.update({
+      collection: "orders",
+      id,
       data: updateData,
     });
-
-    // Eğer kargoya verildiyse ve kargo bilgisi varsa Shipment oluştur veya güncelle
-    if (status === "SHIPPED" && carrier && trackingNumber) {
-      await db.shipment.create({
-        data: {
-          orderId: id,
-          carrier,
-          trackingNumber,
-          status: "Kargoya Verildi",
-          shippedAt: new Date(),
-        },
-      });
-    }
 
     return NextResponse.json({
       success: true,
       order: updatedOrder,
     });
   } catch (error: any) {
-    console.error("Sipariş güncelleme hatası:", error);
+    console.error("Payload sipariş güncelleme hatası:", error);
     return NextResponse.json(
       { error: error?.message || "Sipariş güncellenirken bir hata oluştu." },
       { status: 500 }
