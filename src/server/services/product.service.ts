@@ -19,6 +19,20 @@ const SLUG_ALIASES: Record<string, string> = {
   "wireless-hoparlor-ve-ses": "kamp-fenerleri",
 };
 
+function resolveMediaUrl(imgObj: any): string | null {
+  if (!imgObj) return null;
+  if (typeof imgObj === "string") {
+    return imgObj.startsWith("/api/media/file/") ? imgObj.replace("/api/media/file/", "/uploads/") : imgObj;
+  }
+  if (typeof imgObj === "object") {
+    if (imgObj.filename) return `/uploads/${imgObj.filename}`;
+    if (imgObj.url) {
+      return imgObj.url.startsWith("/api/media/file/") ? imgObj.url.replace("/api/media/file/", "/uploads/") : imgObj.url;
+    }
+  }
+  return null;
+}
+
 export class ProductService {
   /**
    * Tüm kategorileri sıralı şekilde getirir (Sadece Payload DB)
@@ -31,6 +45,7 @@ export class ProductService {
           collection: "categories",
           limit: 100,
           sort: "order",
+          overrideAccess: true,
         });
         if (res.docs.length > 0) {
           return res.docs.map((c: any, index: number) => ({
@@ -38,7 +53,7 @@ export class ProductService {
             name: c.name,
             slug: c.slug,
             description: c.description || null,
-            image: c.image ? (typeof c.image === "object" ? c.image.url : null) : "/images/logo.jpg",
+            image: resolveMediaUrl(c.image) || "/images/logo.jpg",
             parentId: null,
             order: typeof c.order === "number" ? c.order : index,
           }));
@@ -62,6 +77,7 @@ export class ProductService {
           collection: "categories",
           where: { slug: { equals: targetSlug } },
           limit: 1,
+          overrideAccess: true,
         });
 
         if (res.docs.length === 0 && targetSlug !== slug) {
@@ -69,6 +85,7 @@ export class ProductService {
             collection: "categories",
             where: { slug: { equals: slug } },
             limit: 1,
+            overrideAccess: true,
           });
         }
 
@@ -79,7 +96,7 @@ export class ProductService {
             name: c.name,
             slug: c.slug,
             description: c.description || null,
-            image: c.image ? (typeof c.image === "object" ? c.image.url : null) : "/images/logo.jpg",
+            image: resolveMediaUrl(c.image) || "/images/logo.jpg",
             parentId: null,
             order: typeof c.order === "number" ? c.order : 0,
           };
@@ -94,7 +111,7 @@ export class ProductService {
 
   /**
    * Filtrelenebilir ürün listesi (kategori, arama, sıralama)
-   * Yalnızca Payload CMS'ten eklenmiş gerçek ürünleri çeker. Asla mock veri kullanmaz.
+   * Yalnızca Payload CMS'ten eklenmiş gerçek ürünleri çeker.
    */
   static async getProducts(params?: {
     categorySlug?: string;
@@ -117,6 +134,7 @@ export class ProductService {
           collection: "categories",
           where: { slug: { equals: targetSlug } },
           limit: 1,
+          overrideAccess: true,
         });
 
         if (catRes.docs.length === 0 && targetSlug !== params.categorySlug) {
@@ -124,13 +142,13 @@ export class ProductService {
             collection: "categories",
             where: { slug: { equals: params.categorySlug } },
             limit: 1,
+            overrideAccess: true,
           });
         }
 
         if (catRes.docs.length > 0) {
           where.category = { equals: catRes.docs[0].id };
         } else {
-          // İlgili kategori bulunamadıysa 0 ürün döner
           return [];
         }
       }
@@ -140,6 +158,7 @@ export class ProductService {
         where,
         limit: 100,
         depth: 2,
+        overrideAccess: true,
       });
 
       if (!res.docs || res.docs.length === 0) {
@@ -159,22 +178,26 @@ export class ProductService {
         if (Array.isArray(p.images)) {
           p.images.forEach((imgObj: any, idx: number) => {
             const img = imgObj?.image;
-            if (img && typeof img === "object" && img.url) {
+            const url = resolveMediaUrl(img);
+            if (url) {
               images.push({
-                id: String(img.id || idx),
-                url: img.url,
-                altText: img.alt || p.name,
+                id: String(img?.id || idx),
+                url,
+                altText: img?.alt || p.name,
               });
             }
           });
         }
 
         if (p.imageUrl) {
-          images.unshift({
-            id: `img-${p.id}`,
-            url: p.imageUrl,
-            altText: p.name,
-          });
+          const cleanUrl = resolveMediaUrl(p.imageUrl);
+          if (cleanUrl) {
+            images.unshift({
+              id: `img-${p.id}`,
+              url: cleanUrl,
+              altText: p.name,
+            });
+          }
         }
 
         if (images.length === 0) {
@@ -253,6 +276,7 @@ export class ProductService {
         where: { slug: { equals: slug } },
         limit: 1,
         depth: 2,
+        overrideAccess: true,
       });
 
       if (res.docs.length > 0) {
@@ -269,21 +293,25 @@ export class ProductService {
         if (Array.isArray(p.images)) {
           p.images.forEach((imgObj: any, idx: number) => {
             const img = imgObj?.image;
-            if (img && typeof img === "object" && img.url) {
+            const url = resolveMediaUrl(img);
+            if (url) {
               images.push({
-                id: String(img.id || idx),
-                url: img.url,
-                altText: img.alt || p.name,
+                id: String(img?.id || idx),
+                url,
+                altText: img?.alt || p.name,
               });
             }
           });
         }
         if (p.imageUrl) {
-          images.unshift({
-            id: `img-${p.id}`,
-            url: p.imageUrl,
-            altText: p.name,
-          });
+          const cleanUrl = resolveMediaUrl(p.imageUrl);
+          if (cleanUrl) {
+            images.unshift({
+              id: `img-${p.id}`,
+              url: cleanUrl,
+              altText: p.name,
+            });
+          }
         }
 
         if (images.length === 0) {

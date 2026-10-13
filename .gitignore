@@ -41,5 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# media uploads
-public/uploads/
+# raw assets
+Sariyildiz_4lu_Urun_Gorselleri/
