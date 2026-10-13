@@ -74,6 +74,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               fill
               className="object-cover object-center"
               priority
+              onError={() => setSelectedImage("/images/placeholder.jpg")}
             />
             {discountRate && (
               <span className="absolute left-4 top-4 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-slate-950 shadow-md">

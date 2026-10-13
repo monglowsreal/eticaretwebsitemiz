@@ -191,7 +191,7 @@ export class ProductService {
 
         if (p.imageUrl) {
           const cleanUrl = resolveMediaUrl(p.imageUrl);
-          if (cleanUrl) {
+          if (cleanUrl && !images.some((img) => img.url === cleanUrl)) {
             images.unshift({
               id: `img-${p.id}`,
               url: cleanUrl,
@@ -305,7 +305,7 @@ export class ProductService {
         }
         if (p.imageUrl) {
           const cleanUrl = resolveMediaUrl(p.imageUrl);
-          if (cleanUrl) {
+          if (cleanUrl && !images.some((img) => img.url === cleanUrl)) {
             images.unshift({
               id: `img-${p.id}`,
               url: cleanUrl,

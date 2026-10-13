@@ -18,6 +18,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const defaultVariant = product.variants[0];
   const primaryImage = product.images[0]?.url || "/images/placeholder.jpg";
+  const [imgSrc, setImgSrc] = useState(primaryImage);
   const discountRate =
     defaultVariant?.compareAtPrice && defaultVariant.compareAtPrice > defaultVariant.price
       ? Math.round(
@@ -68,11 +69,12 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Ürün Görseli */}
       <Link href={`/urun/${product.slug}`} className="relative aspect-square w-full overflow-hidden bg-slate-950">
         <Image
-          src={primaryImage}
+          src={imgSrc}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
           className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          onError={() => setImgSrc("/images/placeholder.jpg")}
         />
       </Link>
 
