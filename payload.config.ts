@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { buildConfig } from "payload";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
@@ -35,6 +36,9 @@ export default buildConfig({
         process.env.DIRECT_URL ||
         process.env.DATABASE_URL ||
         "postgresql://postgres:postgres@localhost:5432/sariyildiz_db?schema=public",
+      max: 4,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
       ssl:
         process.env.NODE_ENV === "production" ||
         process.env.DIRECT_URL?.includes("supabase") ||
