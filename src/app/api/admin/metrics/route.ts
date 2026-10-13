@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 import configPromise from "@payload-config";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const payload = await getPayload({ config: configPromise });
 
     const [ordersRes, productsRes] = await Promise.all([
-      payload.find({ collection: "orders", limit: 200 }).catch(() => ({ docs: [] })),
-      payload.find({ collection: "products", limit: 200 }).catch(() => ({ docs: [] })),
+      payload.find({ collection: "orders", limit: 200, overrideAccess: true }).catch(() => ({ docs: [] })),
+      payload.find({ collection: "products", limit: 200, overrideAccess: true }).catch(() => ({ docs: [] })),
     ]);
 
     const orders = ordersRes.docs || [];

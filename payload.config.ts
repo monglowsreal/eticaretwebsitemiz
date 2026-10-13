@@ -34,10 +34,10 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString:
-        process.env.DIRECT_URL ||
         process.env.DATABASE_URL ||
+        process.env.DIRECT_URL ||
         "postgresql://postgres:postgres@localhost:5432/sariyildiz_db?schema=public",
-      max: 4,
+      max: 5,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,
       ssl:

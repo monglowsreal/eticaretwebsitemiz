@@ -58,6 +58,8 @@ async function getOrCreateCategory(payload: any, slug: string): Promise<string |
   return fallback.id;
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const payload = await getPayload({ config: configPromise });
@@ -65,6 +67,7 @@ export async function GET() {
       collection: "products",
       limit: 100,
       depth: 2,
+      overrideAccess: true,
     });
 
     return NextResponse.json({ success: true, products: products.docs });
