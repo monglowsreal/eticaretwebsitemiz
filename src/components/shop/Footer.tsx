@@ -183,8 +183,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="text-slate-500 hover:text-amber-400 transition-colors flex items-center gap-1">
-                  <span>Yönetim Paneli Girişi</span>
+                <Link href="/yonetim" className="text-amber-400/90 font-semibold hover:text-amber-300 transition-colors flex items-center gap-1">
+                  <span>★ Yönetim Paneli (Kokpit)</span>
                 </Link>
               </li>
             </ul>
